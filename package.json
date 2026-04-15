@@ -1,0 +1,12 @@
+{
+    "name": "sillytavern-persistentitemizedprompts-plugin",
+    "version": "1.0.0",
+    "description": "Server plugin for SillyTavern Persistent Itemized Prompts",
+    "main": "index.mjs",
+    "type": "module",
+    "author": "Enerccio",
+    "license": "AGPL-3.0",
+    "dependencies": {
+        "sqlite3": "^6.0.1"
+    }
+}
