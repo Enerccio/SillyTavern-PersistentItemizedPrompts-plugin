@@ -7,10 +7,11 @@ Use this plugin with https://github.com/Enerccio/SillyTavern-PersistentItemizedP
 1. Stop SillyTavern
 2. Enable plugins in `config.yaml`
 3. git clone this plugin into `plugins` folder
-4. Install extension https://github.com/Enerccio/SillyTavern-PersistentItemizedPrompts
-5. Start SillyTavern
-6. ???
-7. Profit
+4. Run `npm install` to download dependencies
+5. Install extension https://github.com/Enerccio/SillyTavern-PersistentItemizedPrompts
+6. Start SillyTavern
+7. ???
+8. Profit
 
 # Configuration
 
