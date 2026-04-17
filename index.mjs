@@ -1,6 +1,6 @@
 import path from 'node:path';
+import sqlite from 'node:sqlite';
 
-import sqlite3 from 'sqlite3';
 import zlib from 'zlib';
 import chalk from 'chalk';
 import { getConfigValue } from '../../src/util.js';
@@ -79,38 +79,21 @@ class ItemizedPromptsDB {
 
     async _execute(sql, params = []) {
         if (params && params.length > 0) {
-            return new Promise((resolve, reject) => {
-                this.db.run(sql, params, (err) => {
-                    if (err) reject(err);
-                    resolve();
-                });
-            });
+           const ps = this.db.prepare(sql);
+           ps.run({}, ...params);
         }
 
-        return new Promise((resolve, reject) => {
-            this.db.exec(sql, (err) => {
-                if (err) reject(err);
-                resolve();
-            });
-        });
+        this.db.exec(sql);
     }
 
-    async _fetchAll (sql, params) {
-        return new Promise((resolve, reject) => {
-            this.db.all(sql, params, (err, rows) => {
-                if (err) reject(err);
-                resolve(rows);
-            });
-        });
+    async _fetchAll (sql, params=[]) {
+        const ps = this.db.prepare(sql);
+        return ps.all({}, ...params);
     }
 
-    async _fetchFirst (sql, params) {
-        return new Promise((resolve, reject) => {
-            this.db.get(sql, params, (err, row) => {
-                if (err) reject(err);
-                resolve(row);
-            });
-        });
+    async _fetchFirst (sql, params=[]) {
+        const ps = this.db.prepare(sql);
+        return ps.get({}, ...params);
     };
 
 }
@@ -125,7 +108,7 @@ class PersistentItemizedPrompts {
 
     async open(handle, directories) {
         if (!this.openedDatabases[handle]) {
-            const db = new sqlite3.Database(this._getPathForHandle(handle, directories));
+            const db = new sqlite.DatabaseSync(this._getPathForHandle(handle, directories));
             this.openedDatabases[handle] = new ItemizedPromptsDB(db);
             await this.openedDatabases[handle].initialize();
             return this.openedDatabases[handle].exist;

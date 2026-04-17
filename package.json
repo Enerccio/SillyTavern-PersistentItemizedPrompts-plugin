@@ -7,6 +7,6 @@
     "author": "Enerccio",
     "license": "AGPL-3.0",
     "dependencies": {
-        "sqlite3": "^6.0.1"
+
     }
 }
