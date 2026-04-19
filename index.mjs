@@ -87,7 +87,7 @@ class ItemizedPromptsDB {
     async getPrompts(chatId, ids) {
         // strange query but recommended by sqlite
         // https://stackoverflow.com/questions/34349199/node-js-sqlite3-in-operator
-        const rows = await this._fetchAll("SELECT message_id, prompt FROM prompts WHERE chat_id = ? AND message_id in (SELECT value FROM json_each(?))", [chatId,
+        const rows = await this._fetchAll("SELECT message_id, prompt FROM prompts WHERE chat_id = ? AND message_id in (SELECT value FROM json_each(?)) ORDER BY CAST(message_id AS INTEGER)", [chatId,
             JSON.stringify(ids)]);
         return rows.map((row) => {
             let promptBuffer = row.prompt;
