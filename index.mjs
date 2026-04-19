@@ -80,7 +80,7 @@ class ItemizedPromptsDB {
     }
 
     async getAllIds(chatId) {
-        const rows = await this._fetchAll("SELECT message_id FROM prompts WHERE chat_id = ? ORDER BY message_id", [chatId]);
+        const rows = await this._fetchAll("SELECT message_id FROM prompts WHERE chat_id = ? ORDER BY CAST(message_id AS INTEGER)", [chatId]);
         return rows.map((row) => row.message_id);
     }
 
