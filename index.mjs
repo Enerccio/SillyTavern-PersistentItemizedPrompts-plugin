@@ -6,6 +6,7 @@ import chalk from 'chalk';
 import { getConfigValue } from '../../src/util.js';
 
 const MODULE = '[SillyTavern-PersistentItemizedPrompts-plugin]';
+const DB_VERSION = 1;
 
 class ItemizedPromptsDB {
 
@@ -18,9 +19,40 @@ class ItemizedPromptsDB {
     async initialize() {
         const data = await this._fetchFirst("SELECT name FROM sqlite_master WHERE type='table' AND name='prompts'");
         this.exist = !! (data && data['name']);
+        const version = await this._fetchFirst("SELECT name FROM sqlite_master WHERE type='table' AND name='vercheck'");
         if (!this.exist) {
             await this._execute("CREATE TABLE prompts (chat_id TEXT, message_id TEXT, prompt BLOB, PRIMARY KEY (chat_id, message_id))");
         }
+        if (!version) {
+            await this._execute("CREATE TABLE vercheck (chat_id TEXT, version INTEGER, PRIMARY KEY (chat_id))");
+            if (this.exist) {
+                const chats = await this._fetchAll("SELECT DISTINCT chat_id FROM prompts ORDER BY chat_id");
+                chats.forEach(ch => {
+                    this._execute("INSERT INTO vercheck(chat_id, version) VALUES (?, ?)", [ch.chat_id, 0]);
+                })
+            }
+        }
+    }
+
+    async prepare(chatId) {
+        const versionData = await this._fetchFirst("SELECT version FROM vercheck WHERE chat_id = ?", [chatId]);
+        if (versionData && versionData['version'] < DB_VERSION) {
+            const version = versionData['version'];
+            if (version === 0) {
+                // fix chat Id instead of itemized prompt id
+                const ids = await this.getAllIds(chatId);
+                const prompts = await this.getPrompts(chatId, ids);
+                await this.delete(chatId);
+                for (const prompt of prompts) {
+                    const p = prompt.prompt;
+                    await this.persist(chatId, p.mesId, p);
+                }
+            }
+        }
+        if (versionData)
+            await this._execute("UPDATE vercheck SET version = ? WHERE chat_id = ?", [DB_VERSION, chatId]);
+        else
+            await this._execute("INSERT INTO vercheck(chat_id, version) VALUES (?, ?)", [chatId, DB_VERSION]);
     }
 
     async vaacum() {
@@ -40,7 +72,7 @@ class ItemizedPromptsDB {
             blob = Buffer.from(stringValue, 'utf8');
         }
         await this._execute("INSERT INTO prompts(chat_id, message_id, prompt) VALUES(?, ?, ?) ON CONFLICT(chat_id, message_id) DO UPDATE SET prompt=?",
-            [chatId, messageId, blob, blob]);
+            [chatId, String(messageId), blob, blob]);
     }
 
     async deleteMessage(chatId, messageId) {
@@ -70,7 +102,7 @@ class ItemizedPromptsDB {
     }
 
     async delete(chatId) {
-        await this._execute("DELETE FROM prompts WERE chat_id = ?", [chatId]);
+        await this._execute("DELETE FROM prompts WHERE chat_id = ?", [chatId]);
     }
 
     async deleteAll() {
@@ -81,6 +113,7 @@ class ItemizedPromptsDB {
         if (params && params.length > 0) {
            const ps = this.db.prepare(sql);
            ps.run({}, ...params);
+           return;
         }
 
         this.db.exec(sql);
@@ -128,6 +161,7 @@ class PersistentItemizedPrompts {
         if (!this.openedDatabases[handle]) {
             await this.open(handle, directories);
         }
+        this.openedDatabases[handle].prepare(chatId);
         this.openedDatabases[handle].persist(chatId, messageId, request);
     }
 
@@ -135,6 +169,7 @@ class PersistentItemizedPrompts {
         if (!this.openedDatabases[handle]) {
             await this.open(handle, directories);
         }
+        this.openedDatabases[handle].prepare(chatId);
         this.openedDatabases[handle].deleteMessage(chatId, messageId);
     }
 
@@ -142,6 +177,7 @@ class PersistentItemizedPrompts {
         if (!this.openedDatabases[handle]) {
             await this.open(handle, directories);
         }
+        this.openedDatabases[handle].prepare(chatId);
         const db = this.openedDatabases[handle];
         for (let bulkOperation of bulkOperations) {
             const messageId = bulkOperation.messageId;
@@ -158,6 +194,7 @@ class PersistentItemizedPrompts {
         if (!this.openedDatabases[handle]) {
             await this.open(handle, directories);
         }
+        this.openedDatabases[handle].prepare(chatId);
         return await this.openedDatabases[handle].getAllIds(chatId);
     }
 
@@ -165,6 +202,7 @@ class PersistentItemizedPrompts {
         if (!this.openedDatabases[handle]) {
             await this.open(handle, directories);
         }
+        this.openedDatabases[handle].prepare(chatId);
         return await this.openedDatabases[handle].getPrompts(chatId, ids);
     }
 
@@ -173,14 +211,14 @@ class PersistentItemizedPrompts {
             await this.open(handle, directories);
         }
 
+        this.openedDatabases[handle].prepare(chatId);
         return await this.openedDatabases[handle].delete(chatId);
     }
 
-    async deleteALl(handle, directories) {
+    async deleteAll(handle, directories) {
         if (!this.openedDatabases[handle]) {
             await this.open(handle, directories);
         }
-
         return await this.openedDatabases[handle].deleteAll();
     }
 
