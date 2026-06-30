@@ -56,7 +56,7 @@ class ItemizedPromptsDB {
     }
 
     async vacuum() {
-        await this._execute("VACUUM prompts");
+        await this._execute("VACUUM");
     }
 
     async close() {
