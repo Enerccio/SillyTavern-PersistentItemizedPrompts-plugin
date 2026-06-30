@@ -55,7 +55,7 @@ class ItemizedPromptsDB {
             await this._execute("INSERT INTO vercheck(chat_id, version) VALUES (?, ?)", [chatId, DB_VERSION]);
     }
 
-    async vaacum() {
+    async vacuum() {
         await this._execute("VACUUM prompts");
     }
 
