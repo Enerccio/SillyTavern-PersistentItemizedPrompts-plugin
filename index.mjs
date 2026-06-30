@@ -56,7 +56,7 @@ class ItemizedPromptsDB {
     }
 
     async vaacum() {
-        await this._execute("VAACUM prompts");
+        await this._execute("VACUUM prompts");
     }
 
     async close() {
@@ -151,8 +151,17 @@ class PersistentItemizedPrompts {
 
     async closeAll() {
         for (const db of Object.values(this.openedDatabases)) {
-            db.vaacum();
-            db.close();
+            try {
+                await db.vacuum();
+            } catch (err) {
+                console.error(`${MODULE} Error during vacuum:`, err);
+            }
+
+            try {
+                db.close();
+            } catch (err) {
+                console.error(`${MODULE} Error closing database:`, err);
+            }
         }
         this.openedDatabases = {};
     }

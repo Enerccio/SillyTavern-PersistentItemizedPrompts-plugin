@@ -32,3 +32,6 @@ Your prompts are saved in `data/<your-user or default-user>/itemizedPrompts.sqli
 # Warning
 
 Requires SillyTavern `staging` branch for now!
+
+> [!IMPORTANT]
+> This plugin requires **Node.js version 22.5.0 or higher** because it relies on the native `node:sqlite` module. If you are using Termux on Android, ensure your Node version is updated (`node -v`) before installing.
